@@ -16,6 +16,7 @@ from dateutil.relativedelta import relativedelta
 from twitter import *
 from config import CONSUMER_KEY, CONSUMER_SECRET
 
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
@@ -71,7 +72,6 @@ def publish_images(content, filenames):
 
 
 def publish(content):
-    log(content)
     oauth_token, oauth_token_secret = get_twitter_credentials()
     auth = OAuth(
         oauth_token,
@@ -92,8 +92,11 @@ def add_job(scheduler, trigger_type, func, **kwargs):
     )
 
 
-def log(content):
-    print('{}: {}'.format(datetime.datetime.now(), content))
+def log_job(event):
+    job = scheduler.get_job(event.job_id)
+    print('* JOB_EXECUTED * {}: "{}" - "{}"'.format(datetime.datetime.now(), job.name, job.args))
+    if event.exception:
+        print('* Exception * {}'.format(event.exception))
 
 
 if __name__ == '__main__':
@@ -102,6 +105,8 @@ if __name__ == '__main__':
         sys.exit(0)
 
     scheduler = BackgroundScheduler(timezone=TIMEZONE)
+    scheduler.add_listener(log_job, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+
     data = yaml.load(open(TWEETS_YAML))
     for category in data:
         for subcategory in data[category]:
