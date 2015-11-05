@@ -7,21 +7,26 @@
 
 import os
 import sys
+import pytz
 import yaml
+import time
 import datetime
 from dateutil.relativedelta import relativedelta
 
 from twitter import *
 from config import CONSUMER_KEY, CONSUMER_SECRET
 
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
+TIMEZONE = pytz.timezone('America/Lima')
 OAUTH_FILENAME = os.environ.get(
     'HOME',
     os.environ.get('USERPROFILE', '')
 ) + os.sep + '.twitter_your_reminder_oauth'
-TWEETS_YAML = 'tweets.yaml'
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+MEDIA_DIR = os.path.join(BASE_DIR, 'media')
+TWEETS_YAML = os.path.join(BASE_DIR, 'tweets.yaml')
 PERIOD_ARG = {
     'once': None,
     'hourly': 'hours',
@@ -67,7 +72,7 @@ if __name__ == '__main__':
         get_twitter_credentials()
         sys.exit(0)
 
-    scheduler = BlockingScheduler()
+    scheduler = BackgroundScheduler(timezone=TIMEZONE)
     data = yaml.load(open(TWEETS_YAML))
     for category in data:
         for subcategory in data[category]:
@@ -76,7 +81,13 @@ if __name__ == '__main__':
                     # exclude categories with no tweets
                     continue
 
-                nro_tweets_for_period = len(data[category][subcategory][period])
+                # README: exclude 'strict' tweets when calculated
+                # interval period for _no_ 'strict' ones
+                tweets_for_period = []
+                for tweet in data[category][subcategory][period]:
+                    if not tweet.get('strict', False):
+                        tweets_for_period.append(tweet)
+                nro_tweets_for_period = len(tweets_for_period)
 
                 for i, tweet in enumerate(data[category][subcategory][period]):
                     content = tweet['content']
@@ -96,32 +107,66 @@ if __name__ == '__main__':
                     else:
                         now = datetime.datetime.now()
                         time_period = PERIOD_ARG[period]
-                        start_date = now + relativedelta(**{time_period: i+1})
 
-                        kwargs = {}
-                        # TODO: handle other cases here
-                        if period == 'monthly':
-                            kwargs['weeks'] = nro_tweets_for_period * 4
+                        if tweet.get('strict', False):
+                            # respect the period as it is
+                            kwargs = {}
+                            kwargs.update({
+                                'args': [content],
+                                time_period: 1,
+                                # 'timezone': timezone,
+                            })
+
+                            for attr in ('start_date', 'end_date'):
+                                if tweet.get(attr, False):
+                                    kwargs.update({attr: tweet[attr]})
+
+                            job = scheduler.add_job(
+                                publish,
+                                'interval',
+                                **kwargs
+                            )
                         else:
-                            kwargs[time_period] = nro_tweets_for_period
+                            # TODO: if the tweet already has
+                            # 'start_date' we need to adds to this
+                            # calculation
+                            start_date = now + relativedelta(**{time_period: i+1})
 
-                        kwargs.update({
-                            'args': [content],
-                            'start_date': start_date,
-                            # 'timezone': timezone,
-                        })
+                            kwargs = {}
+                            # TODO: handle other cases here
+                            if period == 'monthly':
+                                kwargs['weeks'] = nro_tweets_for_period * 4
+                            else:
+                                kwargs[time_period] = nro_tweets_for_period
 
-                        job = scheduler.add_job(
-                            publish,
-                            'interval',
-                            **kwargs
-                        )
+                            kwargs.update({
+                                'args': [content],
+                                'start_date': start_date,
+                                # 'timezone': timezone,
+                            })
 
-    scheduler.print_jobs()
-    print('{}: Press Ctrl+C to exit'.format(now), end='\n\n')
+                            job = scheduler.add_job(
+                                publish,
+                                'interval',
+                                **kwargs
+                            )
 
     try:
         scheduler.start()
+        jobs = scheduler.get_jobs()
+
+        print('\nNEXT 5/({}) TWEET to publish:'.format(len(jobs)))
+        for job in jobs[:5]:
+            print('{}: {} ...'.format(
+                job.next_run_time,
+                job.args[0][:50].replace('\n', '\\n'))
+            )
+
+        print('{}: Press Ctrl+C to exit'.format(now), end='\n\n')
+
+        while True:
+            time.sleep(2)
+
     except (KeyboardInterrupt, SystemExit):
         print('Finishing scheduler...')
         print('Bye.')
