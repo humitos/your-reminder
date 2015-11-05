@@ -49,6 +49,27 @@ def get_twitter_credentials():
     return read_token_file(OAUTH_FILENAME)
 
 
+def publish_images(content, filenames):
+    oauth_token, oauth_token_secret = get_twitter_credentials()
+    auth = OAuth(
+        oauth_token,
+        oauth_token_secret,
+        CONSUMER_KEY,
+        CONSUMER_SECRET
+    )
+    twitter_upload = Twitter(auth=auth, domain='upload.twitter.com')
+
+    id_imgs = []
+    for f in filenames:
+        with open(os.path.join(MEDIA_DIR, f), 'rb') as imagefile:
+            imagedata = imagefile.read()
+        id_img = twitter_upload.media.upload(media=imagedata)['media_id_string']
+        id_imgs.append(id_img)
+
+    twitter = Twitter(auth=auth, domain='api.twitter.com')
+    twitter.statuses.update(status=content, media_ids=','.join(id_imgs))
+
+
 def publish(content):
     log(content)
     oauth_token, oauth_token_secret = get_twitter_credentials()
@@ -101,7 +122,7 @@ if __name__ == '__main__':
                     content = tweet['content']
 
                     if period == 'once':
-                        args = ('date', publish)
+                        args = ['date', publish]
                         kwargs = {
                             'args': [content],
                             'run_date': tweet['date']
@@ -113,7 +134,7 @@ if __name__ == '__main__':
 
                         if tweet.get('strict', False):
                             # respect the period as it is
-                            args = ('interval', publish)
+                            args = ['interval', publish]
                             kwargs = {
                                 'args': [content],
                                 time_period: 1,
@@ -129,7 +150,7 @@ if __name__ == '__main__':
                             # calculation
                             start_date = now + relativedelta(**{time_period: i+1})
 
-                            args = ('interval', publish)
+                            args = ['interval', publish]
                             kwargs = {}
                             # TODO: handle other cases here
                             if period == 'monthly':
@@ -142,15 +163,21 @@ if __name__ == '__main__':
                                 'start_date': start_date,
                                 # 'timezone': timezone,
                             })
+
+                    if tweet.get('media', False):
+                        args[1] = publish_images
+                        kwargs['args'].append(tweet['media'])
                     add_job(scheduler, *args, **kwargs)
     try:
         scheduler.start()
         jobs = scheduler.get_jobs()
 
-        print('\nNEXT 5/({}) TWEET to publish:'.format(len(jobs)))
+        print('\nNOW: {}'.format(datetime.datetime.now()))
+        print('NEXT 5/({}) TWEET to publish:'.format(len(jobs)))
         for job in jobs[:5]:
-            print('{}: {} ...'.format(
+            print('{}: "{}" - {} ...'.format(
                 job.next_run_time,
+                job.name,
                 job.args[0][:50].replace('\n', '\\n'))
             )
 
