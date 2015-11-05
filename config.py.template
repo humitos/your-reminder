@@ -1,4 +1,13 @@
+import os
+import pytz
+
+TIMEZONE = pytz.timezone('America/Lima')
+
+BASE_DIR = os.path.dirname(__file__)
+MEDIA_DIR = os.path.join(BASE_DIR, 'media')
+TWEETS_YAML = os.path.join(BASE_DIR, 'tweets.yaml')
+
 # This is specific for the Twitter App
-# TODO: add documentation about how to get Twitter CONSUMERs
+# https://apps.twitter.com/
 CONSUMER_KEY = ""
 CONSUMER_SECRET = ""

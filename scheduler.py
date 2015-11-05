@@ -7,27 +7,25 @@
 
 import os
 import sys
-import pytz
 import yaml
 import time
 import datetime
 from dateutil.relativedelta import relativedelta
 
 from twitter import *
-from config import CONSUMER_KEY, CONSUMER_SECRET
+from config import (
+    TIMEZONE, MEDIA_DIR, TWEETS_YAML,
+    CONSUMER_KEY, CONSUMER_SECRET
+)
 
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
-TIMEZONE = pytz.timezone('America/Lima')
 OAUTH_FILENAME = os.environ.get(
     'HOME',
     os.environ.get('USERPROFILE', '')
 ) + os.sep + '.twitter_your_reminder_oauth'
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-MEDIA_DIR = os.path.join(BASE_DIR, 'media')
-TWEETS_YAML = os.path.join(BASE_DIR, 'tweets.yaml')
 PERIOD_ARG = {
     'once': None,
     'hourly': 'hours',
