@@ -1,0 +1,4 @@
+# This is specific for the Twitter App
+# TODO: add documentation about how to get Twitter CONSUMERs
+CONSUMER_KEY = ""
+CONSUMER_SECRET = ""

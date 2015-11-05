@@ -1,0 +1,64 @@
+# HELP: Periodic dates means
+
+# Run the task periodicaly (hourly, daily, etc) but if there are more
+# than one task in that category divide the "monthly" by the amount of
+# task in that category.
+#
+# So, if we have 3 task in the same category and subcategory, each of
+# them will be posted every 3 months.
+#
+# With the "strict" option, we will able to force it to run
+# periodically without exceptions.
+
+
+Category A:
+
+  Subcategory AA:
+
+    once:
+
+      - date: 2015-11-10 22:15:30 GMT-5
+        content: "I'm using YourReminder to tweet this."
+
+    hourly:
+
+    daily:
+
+    weekly:
+
+    monthly:
+
+
+Category B:
+
+  Subcategory BA:
+
+    once:
+
+    hourly:
+
+    daily:
+
+    weekly:
+
+    monthly:
+
+      - content: "This tweet will be ran once each 2 months"
+
+      - content: "This tweet will be ran once each 2 months"
+
+  Subcategory BB:
+
+    once:
+
+    hourly:
+
+    daily:
+      - strict: true  # this option is not implemented yet
+        content: "This tweet will be posted once a day"
+
+      - content: "Once each 2 days"
+
+    weekly:
+
+    monthly:
