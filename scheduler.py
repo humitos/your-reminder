@@ -63,6 +63,14 @@ def publish(content):
     response = twitter.statuses.update(status=content)
 
 
+def add_job(scheduler, trigger_type, func, **kwargs):
+    scheduler.add_job(
+        func,
+        trigger_type,
+        **kwargs
+    )
+
+
 def log(content):
     print('{}: {}'.format(datetime.datetime.now(), content))
 
@@ -93,45 +101,35 @@ if __name__ == '__main__':
                     content = tweet['content']
 
                     if period == 'once':
+                        args = ('date', publish)
                         kwargs = {
                             'args': [content],
                             'run_date': tweet['date']
                             # 'timezone': timezone,
                         }
-
-                        job = scheduler.add_job(
-                            publish,
-                            'date',
-                            **kwargs
-                        )
                     else:
                         now = datetime.datetime.now()
                         time_period = PERIOD_ARG[period]
 
                         if tweet.get('strict', False):
                             # respect the period as it is
-                            kwargs = {}
-                            kwargs.update({
+                            args = ('interval', publish)
+                            kwargs = {
                                 'args': [content],
                                 time_period: 1,
                                 # 'timezone': timezone,
-                            })
+                            }
 
                             for attr in ('start_date', 'end_date'):
                                 if tweet.get(attr, False):
-                                    kwargs.update({attr: tweet[attr]})
-
-                            job = scheduler.add_job(
-                                publish,
-                                'interval',
-                                **kwargs
-                            )
+                                    kwargs[attr] = tweet[attr]
                         else:
                             # TODO: if the tweet already has
                             # 'start_date' we need to adds to this
                             # calculation
                             start_date = now + relativedelta(**{time_period: i+1})
 
+                            args = ('interval', publish)
                             kwargs = {}
                             # TODO: handle other cases here
                             if period == 'monthly':
@@ -144,13 +142,7 @@ if __name__ == '__main__':
                                 'start_date': start_date,
                                 # 'timezone': timezone,
                             })
-
-                            job = scheduler.add_job(
-                                publish,
-                                'interval',
-                                **kwargs
-                            )
-
+                    add_job(scheduler, *args, **kwargs)
     try:
         scheduler.start()
         jobs = scheduler.get_jobs()
