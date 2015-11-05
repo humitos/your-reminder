@@ -38,11 +38,15 @@ Category A:
 Category B:
   Subcategory BB:
     daily:
-      - strict: true  # this option is not implemented yet
+      - strict: true
         content: "This tweet will be posted once a day"
 
       - content: "Once each 2 days"
 ```
+
+See
+[tweets.yaml.template](https://github.com/humitos/your-reminder/blob/master/tweets.yaml.template)
+for full documentation about this file.
 
 ## Run it!
 

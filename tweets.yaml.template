@@ -2,14 +2,21 @@
 
 # Run the task periodicaly (hourly, daily, etc) but if there are more
 # than one task in that category divide the "monthly" by the amount of
-# task in that category.
+# task in that category without counting the "strict" ones.
 #
-# So, if we have 3 task in the same category and subcategory, each of
-# them will be posted every 3 months.
+# So, if we have 3 task under "monthly" in the same category AND
+# subcategory, each of them will be posted every 3 months.
 #
-# With the "strict" option, we will able to force it to run
+# With the "strict" option, we are able to force it to run
 # periodically without exceptions.
+#
+#
+# You can also use "start_date" and "end_date" to specify initial and
+# final dates to post it periodically
+#
 
+# The "media" argument allows you to post images on Twitter (up to 4
+# by Twitter limitation) from MEDIA_DIR config folder.
 
 Category A:
 
@@ -23,6 +30,10 @@ Category A:
     hourly:
 
     daily:
+
+      - content: "We are really happy! We have images support!"
+        date: 2015-11-05 12:45:50
+        media: [img1.jpg, img2.jpg]
 
     weekly:
 
@@ -54,10 +65,21 @@ Category B:
     hourly:
 
     daily:
-      - strict: true  # this option is not implemented yet
-        content: "This tweet will be posted once a day"
+      - strict: true
+        content: "This tweet will be posted every day"
 
-      - content: "Once each 2 days"
+      - content: "This one every 2 days"
+
+      - content: "This one, also, every 2 days"
+
+      - strict: true
+        start_date: 2015-11-10 05:00:00
+        content: "This tweet will be posted every day starting on 2015-11-10 05:00:00"
+
+      - strict: true
+        start_date: 2015-11-10 05:00:00
+        end_date: 2015-12-10 05:00:00
+        content: "The same for this one, but ending at 2015-12-10 05:00:00"
 
     weekly:
 
