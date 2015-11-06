@@ -63,3 +63,5 @@ config.py
 tweets.yaml
 media
 TODO.txt
+nohup.out
+scheduler.pid

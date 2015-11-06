@@ -54,3 +54,12 @@ for full documentation about this file.
 python scheduler.py
 ```
 
+### As a daemon
+
+```
+python scheduler.py --daemon
+```
+
+Enjoy your life being offline from Twitter (AFK) and keeping your
+followers happy!
+

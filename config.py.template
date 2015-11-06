@@ -1,11 +1,14 @@
 import os
 import pytz
 
+PID_FILE = 'scheduler.pid'
+
 TIMEZONE = pytz.timezone('America/Lima')
 
 BASE_DIR = os.path.dirname(__file__)
 MEDIA_DIR = os.path.join(BASE_DIR, 'media')
 TWEETS_YAML = os.path.join(BASE_DIR, 'tweets.yaml')
+SHOW_NEXT_TWEET_TO_PUBLISH = 10
 
 # This is specific for the Twitter App
 # https://apps.twitter.com/

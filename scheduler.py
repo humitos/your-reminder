@@ -10,12 +10,15 @@ import sys
 import yaml
 import time
 import datetime
+import encodings
+from daemonize import Daemonize
 from dateutil.relativedelta import relativedelta
 
 from twitter import *
 from config import (
-    TIMEZONE, MEDIA_DIR, TWEETS_YAML,
-    CONSUMER_KEY, CONSUMER_SECRET
+    TIMEZONE, MEDIA_DIR, TWEETS_YAML, PID_FILE,
+    CONSUMER_KEY, CONSUMER_SECRET,
+    SHOW_NEXT_TWEET_TO_PUBLISH,
 )
 
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
@@ -60,7 +63,7 @@ def publish_images(content, filenames):
 
     id_imgs = []
     for f in filenames:
-        with open(os.path.join(MEDIA_DIR, f), 'rb') as imagefile:
+        with encodings.codecs.open(os.path.join(MEDIA_DIR, f), mode='rb', encoding='utf-8') as imagefile:
             imagedata = imagefile.read()
         id_img = twitter_upload.media.upload(media=imagedata)['media_id_string']
         id_imgs.append(id_img)
@@ -91,13 +94,16 @@ def add_job(scheduler, trigger_type, func, **kwargs):
 
 
 def log_job(event):
+    # TODO: send this also to a logging file. I want to know what was
+    # posted by YourReminder.
+
     job = scheduler.get_job(event.job_id)
     print('* JOB_EXECUTED * {}: "{}" - "{}"'.format(datetime.datetime.now(), job.name, job.args))
     if event.exception:
         print('* Exception * {}'.format(event.exception))
 
 
-if __name__ == '__main__':
+def main():
     if '--get-twitter-credentials' in sys.argv:
         get_twitter_credentials()
         sys.exit(0)
@@ -105,7 +111,7 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler(timezone=TIMEZONE)
     scheduler.add_listener(log_job, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
-    data = yaml.load(open(TWEETS_YAML))
+    data = yaml.load(encodings.codecs.open(TWEETS_YAML, mode='r', encoding='utf-8'))
     for category in data:
         for subcategory in data[category]:
             for period in data[category][subcategory]:
@@ -134,33 +140,30 @@ if __name__ == '__main__':
                     else:
                         now = datetime.datetime.now()
                         time_period = PERIOD_ARG[period]
+                        args = ['interval', publish]
+                        kwargs = {}
+
+                        starting_on = tweet.get('start_date', now)
+                        start_date = starting_on + relativedelta(**{time_period: i+1})
+
+                        # TODO: handle other cases here
+                        if period == 'monthly':
+                            kwargs['weeks'] = nro_tweets_for_period * 4
+                        else:
+                            kwargs[time_period] = nro_tweets_for_period
 
                         if tweet.get('strict', False):
                             # respect the period as it is
-                            args = ['interval', publish]
-                            kwargs = {
+                            kwargs.update({
                                 'args': [content],
                                 time_period: 1,
                                 # 'timezone': timezone,
-                            }
+                            })
 
                             for attr in ('start_date', 'end_date'):
                                 if tweet.get(attr, False):
                                     kwargs[attr] = tweet[attr]
                         else:
-                            # TODO: if the tweet already has
-                            # 'start_date' we need to adds to this
-                            # calculation
-                            start_date = now + relativedelta(**{time_period: i+1})
-
-                            args = ['interval', publish]
-                            kwargs = {}
-                            # TODO: handle other cases here
-                            if period == 'monthly':
-                                kwargs['weeks'] = nro_tweets_for_period * 4
-                            else:
-                                kwargs[time_period] = nro_tweets_for_period
-
                             kwargs.update({
                                 'args': [content],
                                 'start_date': start_date,
@@ -176,15 +179,15 @@ if __name__ == '__main__':
         jobs = scheduler.get_jobs()
 
         print('\nNOW: {}'.format(datetime.datetime.now()))
-        print('NEXT 5/({}) TWEET to publish:'.format(len(jobs)))
-        for job in jobs[:5]:
+        print('NEXT {} ({}) TWEET to publish:'.format(SHOW_NEXT_TWEET_TO_PUBLISH, len(jobs)))
+        for job in jobs[:SHOW_NEXT_TWEET_TO_PUBLISH]:
             print('{}: "{}" - {} ...'.format(
                 job.next_run_time,
                 job.name,
                 job.args[0][:50].replace('\n', '\\n'))
             )
 
-        print('{}: Press Ctrl+C to exit'.format(now), end='\n\n')
+        print('Press Ctrl+C to exit', end='\n\n')
 
         while True:
             time.sleep(2)
@@ -192,3 +195,10 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, SystemExit):
         print('Finishing scheduler...')
         print('Bye.')
+
+if __name__ == '__main__':
+    if '--daemon' in sys.argv:
+        daemon = Daemonize(app='scheduler', pid=PID_FILE, action=main)
+        daemon.start()
+    else:
+        main()
