@@ -96,7 +96,6 @@ def add_job(scheduler, trigger_type, func, **kwargs):
 def log_job(event):
     # TODO: send this also to a logging file. I want to know what was
     # posted by YourReminder.
-
     job = scheduler.get_job(event.job_id)
     print('* JOB_EXECUTED * {}: "{}" - "{}"'.format(datetime.datetime.now(), job.name, job.args))
     if event.exception:
@@ -177,9 +176,10 @@ def main():
     try:
         scheduler.start()
         jobs = scheduler.get_jobs()
-
-        print('\nNOW: {}'.format(datetime.datetime.now()))
+        now = datetime.datetime.now(tz=TIMEZONE)
+        print('\nNOW: {}'.format(now))
         print('NEXT {} ({}) TWEET to publish:'.format(SHOW_NEXT_TWEET_TO_PUBLISH, len(jobs)))
+
         for job in jobs[:SHOW_NEXT_TWEET_TO_PUBLISH]:
             print('{}: "{}" - {} ...'.format(
                 job.next_run_time,
