@@ -93,13 +93,13 @@ def add_job(scheduler, trigger_type, func, **kwargs):
     )
 
 
-def log_job(event):
-    # TODO: send this also to a logging file. I want to know what was
-    # posted by YourReminder.
-    job = scheduler.get_job(event.job_id)
-    print('* JOB_EXECUTED * {}: "{}" - "{}"'.format(datetime.datetime.now(), job.name, job.args))
-    if event.exception:
-        print('* Exception * {}'.format(event.exception))
+# def log_job(event):
+#     # TODO: send this also to a logging file. I want to know what was
+#     # posted by YourReminder.
+#     job = scheduler.get_job(event.job_id)
+#     print('* JOB_EXECUTED * {}: "{}" - "{}"'.format(datetime.datetime.now(), job.name, job.args))
+#     if event.exception:
+#         print('* Exception * {}'.format(event.exception))
 
 
 def main():
@@ -108,7 +108,7 @@ def main():
         sys.exit(0)
 
     scheduler = BackgroundScheduler(timezone=TIMEZONE)
-    scheduler.add_listener(log_job, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+    # scheduler.add_listener(log_job, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
     data = yaml.load(encodings.codecs.open(TWEETS_YAML, mode='r', encoding='utf-8'))
     for category in data:
