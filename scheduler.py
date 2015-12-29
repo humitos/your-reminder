@@ -65,7 +65,7 @@ def publish_images(content, filenames):
 
     id_imgs = []
     for f in filenames:
-        with encodings.codecs.open(os.path.join(MEDIA_DIR, f), mode='rb', encoding='utf-8') as imagefile:
+        with encodings.codecs.open(os.path.join(MEDIA_DIR, f), mode='rb') as imagefile:
             imagedata = imagefile.read()
         id_img = twitter_upload.media.upload(media=imagedata)['media_id_string']
         id_imgs.append(id_img)
