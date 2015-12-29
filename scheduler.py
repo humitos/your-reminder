@@ -34,6 +34,8 @@ PERIOD_ARG = {
     'hourly': 'hours',
     'daily': 'days',
     'weekly': 'weeks',
+    # these period are not supported by apscheduler; we need to
+    # replace them by "weeks"
     'monthly': 'months',
     'yearly': 'years',
 }
@@ -148,6 +150,7 @@ def main():
                         # TODO: handle other cases here
                         if period == 'monthly':
                             kwargs['weeks'] = nro_tweets_for_period * 4
+                            time_period = 'weeks'
                         else:
                             kwargs[time_period] = nro_tweets_for_period
 
