@@ -36,8 +36,8 @@ PERIOD_ARG = {
     'weekly': 'weeks',
     # these period are not supported by apscheduler; we need to
     # replace them by "weeks"
-    'monthly': 'months',
-    'yearly': 'years',
+    'monthly': 'weeks',
+    'yearly': 'weeks',
 }
 
 
@@ -147,18 +147,20 @@ def main():
                         starting_on = tweet.get('start_date', now)
                         start_date = starting_on + relativedelta(**{time_period: i+1})
 
-                        # TODO: handle other cases here
                         if period == 'monthly':
-                            kwargs['weeks'] = nro_tweets_for_period * 4
-                            time_period = 'weeks'
+                            multiplier = 4  # weeks
+                        elif period == 'yearly':
+                            # FIXME: how many weeks are in a year?
+                            multiplier = 4 * 12  # weeks
                         else:
-                            kwargs[time_period] = nro_tweets_for_period
+                            multiplier = 1
+                        kwargs[time_period] = nro_tweets_for_period * multiplier
 
                         if tweet.get('strict', False):
                             # respect the period as it is
                             kwargs.update({
                                 'args': [content],
-                                time_period: 1,
+                                time_period: multiplier,
                                 # 'timezone': timezone,
                             })
 
